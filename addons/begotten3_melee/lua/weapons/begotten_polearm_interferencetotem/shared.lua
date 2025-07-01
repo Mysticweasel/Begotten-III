@@ -101,18 +101,12 @@ function SWEP:OnDeploy()
 	if not self.Owner.cwObserverMode then
 		self.Weapon:EmitSound(attacksoundtable["drawsound"][math.random(1, #attacksoundtable["drawsound"])])
 	end
-
-	if SERVER and IsValid(self.Owner) then
-		self.Owner:SetNetVar("ravenInterferenceActive", true)
-	end
 end
 
 function SWEP:Holster()
 	local player = self.OwnerOverride or self.Owner
 
 	if IsValid(player) then
-		player:SetNetVar("ravenInterferenceActive", false)
-
 		timer.Remove(player:EntIndex().."IdleAnimation")
 		self:StopAllAnims(player)
 		player:SetNetVar("ThrustStance", false)

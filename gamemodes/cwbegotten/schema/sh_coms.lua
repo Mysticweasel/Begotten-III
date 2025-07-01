@@ -1902,161 +1902,203 @@ local COMMAND = Clockwork.command:New("Proclaim");
 	end;
 COMMAND:Register();
 
-function Schema:IsPlayerInterfered(ply)
-	for _, v in player.GetAll() do
-		if v:GetNetVar("ravenInterferenceActive") and v:GetPos():Distance(ply:GetPos()) <= 1024 then
-			return true
-		end
-	end
-	return false
-end
+local COMMAND = Clockwork.command:New("RavenSpeak");
+COMMAND.tip = "Speak through your familiar, a Raven, to another Goreic Warrior.";
+COMMAND.text = "<string Name> <string Message>";
+COMMAND.flags = CMD_DEFAULT;
+COMMAND.arguments = 2;
+COMMAND.alias = {"RS"};
+COMMAND.isChatCommand = true;
+COMMAND.subfaction = "Clan Crast";
 
-function Schema:ScrambleWithCaws(message)
-	local words = {}
-
-	for word in string.gmatch(message, "%S+") do
-		table.insert(words, word)
-	end
-
-	local numToReplace = math.ceil(#words * (2/3))
-	local indices = {}
-
-	while table.Count(indices) < numToReplace do
-		local i = math.random(1, #words)
-		if not indices[i] then
-			indices[i] = true
-			words[i] = (math.random(1, 2) == 1) and "CAW!" or "CROAK!"
-		end
-	end
-
-	return table.concat(words, " ")
-end
-
--- RavenSpeak Command
-local COMMAND = Clockwork.command:New("RavenSpeak")
-COMMAND.tip = "Speak through your familiar, a Raven, to another Goreic Warrior."
-COMMAND.text = "<string Name> <string Message>"
-COMMAND.flags = CMD_DEFAULT
-COMMAND.arguments = 2
-COMMAND.alias = {"RS"}
-COMMAND.isChatCommand = true
-COMMAND.subfaction = "Clan Crast"
-
+-- Called when the command has been run.
 function COMMAND:OnRun(player, arguments)
-	local target = Clockwork.player:FindByID(arguments[1])
+	local target = Clockwork.player:FindByID(arguments[1]);
 
-	if target then
-		local subfaction = player:GetSubfaction()
+	if (target) then
+		local subfaction = player:GetSubfaction();
+
 		if subfaction == "Clan Crast" then
-			local targetFaction = target:GetNetVar("kinisgerOverride") or target:GetFaction()
+			local targetFaction = target:GetNetVar("kinisgerOverride") or target:GetFaction();
+
 			if targetFaction == "Goreic Warrior" then
 				if player:HasBelief("watchful_raven") then
-					local rawMessage = arguments[2]
-					if Schema:IsPlayerInterfered(player) then
-						Schema:EasyText(player, "red", "As you attempt to speak through the raven, static electricity crackles in the air. Your hair stands on edge as your words blend with the CAWS and CROAKS of your familiar.")
-						rawMessage = Schema:ScrambleWithCaws(rawMessage)
-					end
-					local message = '"' .. rawMessage .. '"'
-					Clockwork.chatBox:Add(player, player, "ravenspeak", message)
-					Clockwork.chatBox:Add(target, player, "ravenspeak", message)
-					player:SendLua([[Clockwork.Client:EmitSound("npc/crow/die" .. math.random(1, 2) .. ".wav", 70, 100)]])
-					target:SendLua([[Clockwork.Client:EmitSound("crow" .. math.random(3, 4) .. ".wav", 90, 100)]])
-					netstream.Start(player, "TriggerCrows")
-					netstream.Start(target, "TriggerCrows")
-					target.lastRavenSpeaker = player
+					-- Interference Scramble Check
+					local scramble = false;
+
+					for _, v in ipairs(_player.GetAll()) do
+						if v ~= player and v:Alive() then
+							local wep = v:GetActiveWeapon();
+
+							if IsValid(wep) and wep:GetClass() == "begotten_polearm_interferencetotem" then
+								if v:GetPos():Distance(player:GetPos()) <= 1024 then
+									scramble = true;
+									break;
+								end;
+							end;
+						end;
+					end;
+
+					local message;
+
+					if scramble then
+						Schema:EasyText(player, "olivedrab", "You feel a tingle of electricity crawl across your skin, and your hair stands on end...");
+						message = "\"CAW... CRAAAWK... CROAK... SKRAAAK!\"";
+					else
+						message = "\"" .. table.concat(arguments, " ", 2) .. "\"";
+					end;
+
+					Clockwork.chatBox:Add(player, player, "ravenspeak", message);
+					Clockwork.chatBox:Add(target, player, "ravenspeak", message);
+
+					player:SendLua([[Clockwork.Client:EmitSound("npc/crow/die]] .. math.random(1, 2) .. [[.wav", 70, 100)]]);
+					target:SendLua([[Clockwork.Client:EmitSound("crow]] .. math.random(3, 4) .. [[.wav", 90, 100)]]);
+					netstream.Start(player, "TriggerCrows");
+					netstream.Start(target, "TriggerCrows");
+
+					target.lastRavenSpeaker = player;
 				else
-					Schema:EasyText(player, "firebrick", "You must have the 'Watchful is the Raven' belief to do this!")
+					Schema:EasyText(player, "firebrick", "You must have the 'Watchful is the Raven' belief to do this!");
 				end
 			else
-				Schema:EasyText(player, "firebrick", target:Name() .. " is not a Goreic Warrior!")
+				Schema:EasyText(player, "firebrick", target:Name().." is not a Goreic Warrior!");
 			end
 		else
-			Schema:EasyText(player, "firebrick", "You are not the correct subfaction to do this!")
+			Schema:EasyText(player, "firebrick", "You are not the correct subfaction to do this!");
 		end
 	else
-		Schema:EasyText(player, "grey", arguments[1] .. " is not a valid character!")
+		Schema:EasyText(player, "grey", arguments[1].." is not a valid character!");
 	end
-end
-COMMAND:Register()
+end;
+
+COMMAND:Register();
+
 
 -- RavenSpeakClan
-local COMMAND = Clockwork.command:New("RavenSpeakClan")
-COMMAND.tip = "Speak through your familiar, a Raven, to other members of Clan Crast."
-COMMAND.text = "<string Message>"
-COMMAND.flags = CMD_DEFAULT
-COMMAND.arguments = 1
-COMMAND.alias = {"RSC"}
-COMMAND.isChatCommand = true
-COMMAND.subfaction = "Clan Crast"
+local COMMAND = Clockwork.command:New("RavenSpeakClan");
+COMMAND.tip = "Speak through your familiar, a Raven, to other members of Clan Crast.";
+COMMAND.text = "<string Message>";
+COMMAND.flags = CMD_DEFAULT;
+COMMAND.arguments = 1;
+COMMAND.alias = {"RSC"};
+COMMAND.isChatCommand = true;
+COMMAND.subfaction = "Clan Crast";
 
 function COMMAND:OnRun(player, arguments)
-	if player:GetSubfaction() == "Clan Crast" then
+	local subfaction = player:GetSubfaction();
+
+	if subfaction == "Clan Crast" then
 		if player:HasBelief("watchful_raven") then
-			local rawMessage = arguments[1]
-			if Schema:IsPlayerInterfered(player) then
-				Schema:EasyText(player, "red", "As you attempt to speak through the raven, static electricity crackles in the air. Your hair stands on edge as your words blend with the CAWS and CROAKS of your familiar.")
-				rawMessage = Schema:ScrambleWithCaws(rawMessage)
-			end
-			local message = '"' .. rawMessage .. '"'
-			player:SendLua([[Clockwork.Client:EmitSound("npc/crow/die" .. math.random(1, 2) .. ".wav", 70, 100)]])
-			netstream.Start(player, "TriggerCrows")
+			-- Interference Scramble Check
+			local scramble = false;
+
+			for _, v in ipairs(_player.GetAll()) do
+				if v ~= player and v:Alive() then
+					local wep = v:GetActiveWeapon();
+
+					if IsValid(wep) and wep:GetClass() == "begotten_polearm_interferencetotem" then
+						if v:GetPos():Distance(player:GetPos()) <= 1024 then
+							scramble = true;
+							break;
+						end;
+					end;
+				end;
+			end;
+
+			local message;
+
+			if scramble then
+				Schema:EasyText(player, "olivedrab", "You feel a tingle of electricity crawl across your skin, and your hair stands on end...");
+				message = "\"CAW... CRAAAWK... CROAK... SKRAAAK!\"";
+			else
+				message = "\"" .. table.concat(arguments, " ", 1) .. "\"";
+			end;
+
+			player:SendLua([[Clockwork.Client:EmitSound("npc/crow/die]] .. math.random(1, 2) .. [[.wav", 70, 100)]]);
+			netstream.Start(player, "TriggerCrows");
+
 			for _, v in _player.Iterator() do
 				if v:HasInitialized() and v:Alive() and (v:GetSubfaction() == "Clan Crast" or Clockwork.player:HasFlags(v, "L")) then
-					Clockwork.chatBox:Add(v, player, "ravenspeakclan", message)
-					v:SendLua([[Clockwork.Client:EmitSound("crow" .. math.random(3, 4) .. ".wav", 90, 100)]])
-					netstream.Start(v, "TriggerCrows")
-				end
-			end
+					Clockwork.chatBox:Add(v, player, "ravenspeakclan", message);
+					v:SendLua([[Clockwork.Client:EmitSound("crow]] .. math.random(3, 4) .. [[.wav", 90, 100)]]);
+					netstream.Start(v, "TriggerCrows");
+				end;
+			end;
 		else
-			Schema:EasyText(player, "firebrick", "You must have the 'Watchful is the Raven' belief to do this!")
+			Schema:EasyText(player, "firebrick", "You must have the 'Watchful is the Raven' belief to do this!");
 		end
 	else
-		Schema:EasyText(player, "firebrick", "You are not the correct subfaction to do this!")
+		Schema:EasyText(player, "firebrick", "You are not the correct subfaction to do this!");
 	end
-end
-COMMAND:Register()
+end;
+COMMAND:Register();
+
 
 -- RavenSpeakFaction
-local COMMAND = Clockwork.command:New("RavenSpeakFaction")
-COMMAND.tip = "Speak through your familiar, a Raven, to all members of the Goreic Warriors."
-COMMAND.text = "<string Message>"
-COMMAND.flags = CMD_DEFAULT
-COMMAND.arguments = 1
-COMMAND.alias = {"RSF"}
-COMMAND.isChatCommand = true
-COMMAND.faction = "Goreic Warrior"
+local COMMAND = Clockwork.command:New("RavenSpeakFaction");
+COMMAND.tip = "Speak through your familiar, a Raven, to all members of the Goreic Warriors.";
+COMMAND.text = "<string Message>";
+COMMAND.flags = CMD_DEFAULT;
+COMMAND.arguments = 1;
+COMMAND.alias = {"RSF"};
+COMMAND.isChatCommand = true;
+COMMAND.faction = "Goreic Warrior";
 
 function COMMAND:OnRun(player, arguments)
-	local isKing = (player:GetFaction() == "Goreic Warrior" and Schema:GetRankTier("Goreic Warrior", player:GetCharacterData("rank", 1)) >= 5)
-	if player:GetSubfaction() == "Clan Crast" or isKing or player:IsAdmin() then
+	local isKing = (player:GetFaction() == "Goreic Warrior" and Schema:GetRankTier("Goreic Warrior", player:GetCharacterData("rank", 1)) >= 5);
+	local subfaction = player:GetSubfaction();
+
+	if subfaction == "Clan Crast" or isKing or player:IsAdmin() then
 		if player:HasBelief("watchful_raven") or isKing or player:IsAdmin() then
-			local rawMessage = arguments[1]
-			if Schema:IsPlayerInterfered(player) then
-				Schema:EasyText(player, "red", "As you attempt to speak through the raven, static electricity crackles in the air. Your hair stands on edge as your words blend with the CAWS and CROAKS of your familiar.")
-				rawMessage = Schema:ScrambleWithCaws(rawMessage)
-			end
-			local message = '"' .. rawMessage .. '"'
-			player:SendLua([[Clockwork.Client:EmitSound("npc/crow/die" .. math.random(1, 2) .. ".wav", 70, 100)]])
-			netstream.Start(player, "TriggerCrows")
+			-- Interference Scramble Check
+			local scramble = false;
+
+			for _, v in ipairs(_player.GetAll()) do
+				if v ~= player and v:Alive() then
+					local wep = v:GetActiveWeapon();
+
+					if IsValid(wep) and wep:GetClass() == "begotten_polearm_interferencetotem" then
+						if v:GetPos():Distance(player:GetPos()) <= 1024 then
+							scramble = true;
+							break;
+						end;
+					end;
+				end;
+			end;
+
+			local message;
+
+			if scramble then
+				Schema:EasyText(player, "olivedrab", "You feel a tingle of electricity crawl across your skin, and your hair stands on end...");
+				message = "\"CAW... CRAAAWK... CROAK... SKRAAAK!\"";
+			else
+				message = "\"" .. table.concat(arguments, " ", 1) .. "\"";
+			end;
+
+			player:SendLua([[Clockwork.Client:EmitSound("npc/crow/die]] .. math.random(1, 2) .. [[.wav", 70, 100)]]);
+			netstream.Start(player, "TriggerCrows");
+
 			for _, v in _player.Iterator() do
 				if v:HasInitialized() and v:Alive() then
-					local vFaction = v:GetNetVar("kinisgerOverride") or v:GetFaction()
-					local vLastZone = v:GetCharacterData("LastZone")
+					local vFaction = v:GetNetVar("kinisgerOverride") or v:GetFaction();
+					local vLastZone = v:GetCharacterData("LastZone");
+
 					if (vFaction == "Goreic Warrior" and vLastZone ~= "hell" and vLastZone ~= "manor") or Clockwork.player:HasFlags(v, "L") then
-						Clockwork.chatBox:Add(v, player, "ravenspeakfaction", message)
-						v:SendLua([[Clockwork.Client:EmitSound("crow" .. math.random(3, 4) .. ".wav", 90, 100)]])
-						netstream.Start(v, "TriggerCrows")
-					end
-				end
-			end
+						Clockwork.chatBox:Add(v, player, "ravenspeakfaction", message);
+						v:SendLua([[Clockwork.Client:EmitSound("crow]] .. math.random(3, 4) .. [[.wav", 90, 100)]]);
+						netstream.Start(v, "TriggerCrows");
+					end;
+				end;
+			end;
 		else
-			Schema:EasyText(player, "firebrick", "You must have the 'Watchful is the Raven' belief to do this!")
+			Schema:EasyText(player, "firebrick", "You must have the 'Watchful is the Raven' belief to do this!");
 		end
 	else
-		Schema:EasyText(player, "firebrick", "You are not the correct subfaction to do this!")
+		Schema:EasyText(player, "firebrick", "You are not the correct subfaction to do this!");
 	end
-end
-COMMAND:Register()
+end;
+COMMAND:Register();
+
 
 -- RavenReply
 local COMMAND = Clockwork.command:New("RavenReply")
@@ -2066,25 +2108,6 @@ COMMAND.flags = CMD_DEFAULT
 COMMAND.arguments = 1
 COMMAND.alias = {"RR"}
 COMMAND.isChatCommand = true
-
-function COMMAND:OnRun(player, arguments)
-	if IsValid(player.lastRavenSpeaker) then
-		local rawMessage = arguments[1]
-		if Schema:IsPlayerInterfered(player) then
-			Schema:EasyText(player, "red", "As you attempt to speak through the raven, static electricity crackles in the air. Your hair stands on edge as your words blend with the CAWS and CROAKS of your familiar.")
-			rawMessage = Schema:ScrambleWithCaws(rawMessage)
-		end
-		local message = '"' .. rawMessage .. '"'
-		Clockwork.chatBox:Add(player, player, "ravenspeakreply", message)
-		Clockwork.chatBox:Add(player.lastRavenSpeaker, player, "ravenspeakreply", message)
-		player:SendLua([[Clockwork.Client:EmitSound("npc/crow/die" .. math.random(1, 2) .. ".wav", 70, 100)]])
-		player.lastRavenSpeaker:SendLua([[Clockwork.Client:EmitSound("crow" .. math.random(3, 4) .. ".wav", 90, 100)]])
-		netstream.Start(player, "TriggerCrows")
-		netstream.Start(player.lastRavenSpeaker, "TriggerCrows")
-	else
-		Schema:EasyText(player, "firebrick", "There is no ravenspeak to reply to!")
-	end
-end
 
 COMMAND:Register()
 
