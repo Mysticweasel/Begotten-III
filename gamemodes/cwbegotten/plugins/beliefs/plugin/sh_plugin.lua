@@ -408,10 +408,8 @@ function COMMAND:OnRun(player, arguments)
 	end;
 end;
 
-COMMAND:Register();
-
 local COMMAND = Clockwork.command:New("DarkWhisper");
-COMMAND.tip = "Speak in tongues through the void to a target. If the target of this message is not of the Faith of the Dark or the Faith of the Sister then the message will be anonymous and will also drain your target's sanity, though it will result in a moderate amount of corruption for yourself.";
+COMMAND.tip = "Speak in tongues through the void to a target.";
 COMMAND.text = "<string Name> <string Message>";
 COMMAND.flags = CMD_DEFAULT;
 COMMAND.arguments = 2;
@@ -419,19 +417,46 @@ COMMAND.alias = {"DW"};
 COMMAND.isChatCommand = true;
 COMMAND.onerequiredbelief = {"soothsayer", "witch"};
 
--- Called when the command has been run.
 function COMMAND:OnRun(player, arguments)
 	local target = Clockwork.player:FindByID(arguments[1]);
-	
+
 	if (target) then
 		if player:GetFaith() == "Faith of the Dark" then
 			if player:HasBelief("witch") or player:HasBelief("soothsayer") then
 				local curTime = CurTime();
-				local message = "\""..table.concat(arguments, " ", 2).."\"";
 				local targetFaith = target:GetFaith();
-				
+
 				if target:GetNetVar("kinisgerOverride") == "Goreic Warrior" and target:GetNetVar("kinisgerOverrideSubfaction") ~= "Clan Reaver" then
 					targetFaith = "Faith of the Family";
+				end
+
+				-- Interference Scramble Check
+				local scramble = false;
+				local gibberishList = {
+					"Inceptum... Malefica... Sanguinum... Vorteks...",
+					"Vita... Terebinthus... Occultum... Veritas...",
+					"Umbrae... Noctis... Silens... Exspiravit...",
+					"Dolorum... Pactum... Venari... Abissus...",
+					"Sacramentum... Vox... Maledictus... Umbra..."
+				};
+
+				for _, v in ipairs(_player.GetAll()) do
+					if v ~= player and v:Alive() then
+						local wep = v:GetActiveWeapon();
+
+						if IsValid(wep) and wep:GetClass() == "begotten_polearm_interferencetotem" then
+							if v:GetPos():Distance(player:GetPos()) <= 1024 then
+								scramble = true;
+								break;
+							end;
+						end;
+					end;
+				end
+
+				local message = scramble and gibberishList[math.random(1, #gibberishList)] or "\""..table.concat(arguments, " ", 2).."\"";
+
+				if scramble then
+					Schema:EasyText(player, "olivedrab", "You feel a tingle of electricity crawl across your skin, and your hair stands on end...");
 				end
 
 				if (targetFaith == "Faith of the Dark" or target:GetSubfaith() == "Faith of the Sister") then
@@ -447,12 +472,11 @@ function COMMAND:OnRun(player, arguments)
 					player:HandleNeed("corruption", 10);
 					target:HandleSanity(-5);
 					target:Disorient(5);
-					
 					player.nextDarkWhisper = curTime + 15;
 				else
 					Schema:EasyText(player, "chocolate", "You must wait another "..-math.ceil(curTime - player.nextDarkWhisper).." seconds before darkwhispering this character again!");
 				end;
-				
+
 				target.lastDarkWhisperer = player;
 			else
 				Schema:EasyText(player, "chocolate", "You must have the 'Witch' or 'Soothsayer' belief before you can darkwhisper!");
@@ -461,14 +485,16 @@ function COMMAND:OnRun(player, arguments)
 			Schema:EasyText(player, "firebrick", "You are not the correct faith to do this!");
 		end
 	else
-		Schema:EasyText(player, "grey",arguments[1].." is not a valid character!");
+		Schema:EasyText(player, "grey", arguments[1].." is not a valid character!");
 	end
 end;
 
 COMMAND:Register();
 
+
+-- DARKWHISPER DIRECT
 local COMMAND = Clockwork.command:New("DarkWhisperDirect");
-COMMAND.tip = "Speak in tongues through the void to the character you are looking at. If the target of this message is not of the Faith of the Dark or the Faith of the Sister then the message will be anonymous and will also drain your target's sanity, though it will result in a moderate amount of corruption for yourself.";
+COMMAND.tip = "Speak in tongues through the void to the character you are looking at.";
 COMMAND.text = "<string Message>";
 COMMAND.flags = CMD_DEFAULT;
 COMMAND.arguments = 1;
@@ -476,19 +502,46 @@ COMMAND.alias = {"DWD"};
 COMMAND.isChatCommand = true;
 COMMAND.onerequiredbelief = {"soothsayer", "witch"};
 
--- Called when the command has been run.
 function COMMAND:OnRun(player, arguments)
 	local target = Clockwork.entity:GetPlayer(player:GetEyeTraceNoCursor().Entity);
-	
+
 	if (target) then
 		if player:GetFaith() == "Faith of the Dark" then
 			if player:HasBelief("witch") or player:HasBelief("soothsayer") then
 				local curTime = CurTime();
-				local message = "\""..table.concat(arguments, " ", 1).."\"";
 				local targetFaith = target:GetFaith();
-				
+
 				if target:GetNetVar("kinisgerOverride") == "Goreic Warrior" and target:GetNetVar("kinisgerOverrideSubfaction") ~= "Clan Reaver" then
 					targetFaith = "Faith of the Family";
+				end
+
+				-- Interference Scramble Check
+				local scramble = false;
+				local gibberishList = {
+					"Inceptum... Malefica... Sanguinum... Vorteks...",
+					"Vita... Terebinthus... Occultum... Veritas...",
+					"Umbrae... Noctis... Silens... Exspiravit...",
+					"Dolorum... Pactum... Venari... Abissus...",
+					"Sacramentum... Vox... Maledictus... Umbra..."
+				};
+
+				for _, v in ipairs(_player.GetAll()) do
+					if v ~= player and v:Alive() then
+						local wep = v:GetActiveWeapon();
+
+						if IsValid(wep) and wep:GetClass() == "begotten_polearm_interferencetotem" then
+							if v:GetPos():Distance(player:GetPos()) <= 1024 then
+								scramble = true;
+								break;
+							end;
+						end;
+					end;
+				end
+
+				local message = scramble and gibberishList[math.random(1, #gibberishList)] or "\""..table.concat(arguments, " ", 1).."\"";
+
+				if scramble then
+					Schema:EasyText(player, "olivedrab", "You feel a tingle of electricity crawl across your skin, and your hair stands on end...");
 				end
 
 				if (targetFaith == "Faith of the Dark" or target:GetSubfaith() == "Faith of the Sister") then
@@ -504,12 +557,11 @@ function COMMAND:OnRun(player, arguments)
 					player:HandleNeed("corruption", 10);
 					target:HandleSanity(-5);
 					target:Disorient(5);
-					
 					player.nextDarkWhisper = curTime + 15;
 				else
 					Schema:EasyText(player, "chocolate", "You must wait another "..-math.ceil(curTime - player.nextDarkWhisper).." seconds before darkwhispering this character again!");
 				end;
-				
+
 				target.lastDarkWhisperer = player;
 			else
 				Schema:EasyText(player, "chocolate", "You must have the 'Witch' or 'Soothsayer' belief before you can darkwhisper!");
@@ -564,45 +616,56 @@ COMMAND.onerequiredbelief = {"soothsayer", "witch"};
 function COMMAND:OnRun(player, arguments)
 	local faction = player:GetFaction();
 	local faith = player:GetFaith();
-	
-	if faith == "Faith of the Dark" then
-		if faction == "Children of Satan" then
-			if player:HasBelief("witch") or player:HasBelief("soothsayer") then
-				local message = "\""..table.concat(arguments, " ", 1).."\"";
 
-				for _, v in _player.Iterator() do
-					if v:HasInitialized() and v:Alive() and ((v:GetFaction() == "Children of Satan") or Clockwork.player:HasFlags(v, "L")) then
-						if v:GetSubfaction() == "Kinisger" and v:GetNetVar("kinisgerOverride") then
-							Clockwork.chatBox:Add(v, player, "darkwhisperglobalkinisger", message);
-						else
-							Clockwork.chatBox:Add(v, player, "darkwhisperglobal", message);
-						end
-							
-						v:SendLua([[Clockwork.Client:EmitSound("darkwhisper/darkwhisper_short"..math.random(1, 11)..".mp3", 80, 100)]]);
-					end;
+	-- Interference Scramble Check
+	local scramble = false;
+	local gibberishList = {
+		"Inceptum... Malefica... Sanguinum... Vorteks...",
+		"Vita... Terebinthus... Occultum... Veritas...",
+		"Umbrae... Noctis... Silens... Exspiravit...",
+		"Dolorum... Pactum... Venari... Abissus...",
+		"Sacramentum... Vox... Maledictus... Umbra..."
+	};
+
+	for _, v in ipairs(_player.GetAll()) do
+		if v ~= player and v:Alive() then
+			local wep = v:GetActiveWeapon();
+
+			if IsValid(wep) and wep:GetClass() == "begotten_polearm_interferencetotem" then
+				if v:GetPos():Distance(player:GetPos()) <= 1024 then
+					scramble = true;
+					break;
 				end;
-			else
-				Schema:EasyText(player, "chocolate", "You must have the 'Witch' or 'Soothsayer' belief before you can darkwhisper!");
-			end
-		elseif faction == "Goreic Warrior" then
+			end;
+		end;
+	end
+
+	if faith == "Faith of the Dark" then
+		if faction == "Children of Satan" or faction == "Goreic Warrior" then
 			if player:HasBelief("witch") or player:HasBelief("soothsayer") then
-				local message = "\""..table.concat(arguments, " ", 1).."\"";
+				local message;
+
+				if scramble then
+					Schema:EasyText(player, "olivedrab", "You feel a tingle of electricity crawl across your skin, and your hair stands on end...");
+					message = table.Random(gibberishList);
+				else
+					message = "\""..table.concat(arguments, " ", 1).."\"";
+				end
 
 				for _, v in _player.Iterator() do
 					if v:HasInitialized() and v:Alive() then
 						local vFaction = v:GetNetVar("kinisgerOverride") or v:GetFaction();
-						
-						if ((vFaction == "Goreic Warrior") and (v:GetFaith() == "Faith of the Dark" or v:GetSubfaith() == "Faith of the Sister")) or Clockwork.player:HasFlags(v, "L") then
-							if v:GetSubfaction() == "Kinisger" then
+
+						if ((vFaction == faction) and (v:GetFaith() == "Faith of the Dark" or v:GetSubfaith() == "Faith of the Sister")) or Clockwork.player:HasFlags(v, "L") then
+							if v:GetSubfaction() == "Kinisger" and v:GetNetVar("kinisgerOverride") then
 								Clockwork.chatBox:Add(v, player, "darkwhisperglobalkinisger", message);
 							else
 								Clockwork.chatBox:Add(v, player, "darkwhisperglobal", message);
 							end
-							
 							v:SendLua([[Clockwork.Client:EmitSound("darkwhisper/darkwhisper_short"..math.random(1, 11)..".mp3", 80, 100)]]);
 						end
 					end;
-				end;
+				end
 			else
 				Schema:EasyText(player, "chocolate", "You must have the 'Witch' or 'Soothsayer' belief before you can darkwhisper!");
 			end
@@ -615,6 +678,7 @@ function COMMAND:OnRun(player, arguments)
 end;
 
 COMMAND:Register();
+
 
 local COMMAND = Clockwork.command:New("DarkWhisperFactionProclaim");
 COMMAND.tip = "Speak in tongues with authority through the void to your brethren.";
@@ -631,55 +695,57 @@ function COMMAND:OnRun(player, arguments)
 	local faith = player:GetFaith();
 	
 	if faith == "Faith of the Dark" then
-		if faction == "Children of Satan" then
+		if faction == "Children of Satan" or faction == "Goreic Warrior" then
 			if player:HasBelief("witch") or player:HasBelief("soothsayer") then
-				if !player:IsAdmin() and !Clockwork.player:HasFlags(player, "P") and Schema:GetRankTier(faction, player:GetCharacterData("rank", 1)) < 3 then
+				if faction == "Children of Satan" and not player:IsAdmin() and not Clockwork.player:HasFlags(player, "P") and Schema:GetRankTier(faction, player:GetCharacterData("rank", 1)) < 3 then
 					Schema:EasyText(player, "peru", "You are not important enough to do this!");
-				
+					return false;
+				elseif faction == "Goreic Warrior" and not player:IsAdmin() and not Clockwork.player:HasFlags(player, "P") then
+					Schema:EasyText(player, "peru", "You are not important enough to do this!");
 					return false;
 				end
-			
-				local message = "\""..table.concat(arguments, " ", 1).."\"";
 
-				for _, v in _player.Iterator() do
-					if v:HasInitialized() and v:Alive() and ((v:GetFaction() == "Children of Satan") or Clockwork.player:HasFlags(v, "L")) then
-						Clockwork.chatBox:SetMultiplier(1.35);
-						
-						if v:GetSubfaction() == "Kinisger" and v:GetNetVar("kinisgerOverride") then
-							Clockwork.chatBox:Add(v, player, "darkwhisperglobalkinisger", message);
-						else
-							Clockwork.chatBox:Add(v, player, "darkwhisperglobal", message);
-						end
-							
-						v:SendLua([[Clockwork.Client:EmitSound("darkwhisper/darkwhisper_short"..math.random(1, 11)..".mp3", 80, 100)]]);
+				-- Interference Scramble Check
+				local scramble = false;
+				local gibberishList = {
+					"Inceptum... Malefica... Sanguinum... Vorteks...",
+					"Vita... Terebinthus... Occultum... Veritas...",
+					"Umbrae... Noctis... Silens... Exspiravit...",
+					"Dolorum... Pactum... Venari... Abissus...",
+					"Sacramentum... Vox... Maledictus... Umbra..."
+				};
+
+				for _, v in ipairs(_player.GetAll()) do
+					if v ~= player and v:Alive() then
+						local wep = v:GetActiveWeapon();
+
+						if IsValid(wep) and wep:GetClass() == "begotten_polearm_interferencetotem" then
+							if v:GetPos():Distance(player:GetPos()) <= 1024 then
+								scramble = true;
+								break;
+							end;
+						end;
 					end;
-				end;
-			else
-				Schema:EasyText(player, "chocolate", "You must have the 'Witch' or 'Soothsayer' belief before you can darkwhisper!");
-			end
-		elseif faction == "Goreic Warrior" then
-			if player:HasBelief("witch") or player:HasBelief("soothsayer") then
-				if !player:IsAdmin() and !Clockwork.player:HasFlags(player, "P") then
-					Schema:EasyText(player, "peru", "You are not important enough to do this!");
-				
-					return false;
 				end
-			
-				local message = "\""..table.concat(arguments, " ", 1).."\"";
+
+				local message = scramble and table.Random(gibberishList) or "\""..table.concat(arguments, " ", 1).."\"";
+				if scramble then
+					Schema:EasyText(player, "olivedrab", "You feel a tingle of electricity crawl across your skin, and your hair stands on end...");
+				end
 
 				for _, v in _player.Iterator() do
 					if v:HasInitialized() and v:Alive() then
 						local vFaction = v:GetNetVar("kinisgerOverride") or v:GetFaction();
-						
-						if ((vFaction == "Goreic Warrior") and (v:GetFaith() == "Faith of the Dark" or v:GetSubfaith() == "Faith of the Sister")) or Clockwork.player:HasFlags(v, "L") then
+						local validFaith = v:GetFaith() == "Faith of the Dark" or v:GetSubfaith() == "Faith of the Sister";
+
+						if (faction == "Children of Satan" and (vFaction == "Children of Satan" or Clockwork.player:HasFlags(v, "L"))) or
+						   (faction == "Goreic Warrior" and ((vFaction == "Goreic Warrior" and validFaith) or Clockwork.player:HasFlags(v, "L"))) then
 							Clockwork.chatBox:SetMultiplier(1.35);
-							
-							if v:GetSubfaction() == "Kinisger" then
+							if v:GetSubfaction() == "Kinisger" and v:GetNetVar("kinisgerOverride") then
 								Clockwork.chatBox:Add(v, player, "darkwhisperglobalkinisger", message);
 							else
 								Clockwork.chatBox:Add(v, player, "darkwhisperglobal", message);
 							end
-							
 							v:SendLua([[Clockwork.Client:EmitSound("darkwhisper/darkwhisper_short"..math.random(1, 11)..".mp3", 80, 100)]]);
 						end
 					end;
@@ -693,7 +759,7 @@ function COMMAND:OnRun(player, arguments)
 	else
 		Schema:EasyText(player, "firebrick", "You are not the correct faith to do this!");
 	end
-end;
+end
 
 COMMAND:Register();
 
@@ -707,32 +773,58 @@ COMMAND.isChatCommand = true;
 COMMAND.onerequiredbelief = {"soothsayer", "witch"};
 COMMAND.subfaction = "Kinisger";
 
--- Called when the command has been run.
 function COMMAND:OnRun(player, arguments)
 	if player:GetSubfaction() == "Kinisger" then
 		local faction = player:GetNetVar("kinisgerOverride") or player:GetFaction();
-		
+
 		if faction ~= "Wanderer" then
 			if player:HasBelief("witch") or player:HasBelief("soothsayer") then
-				local message = "\""..table.concat(arguments, " ", 1).."\"";
+				local message = "\"" .. table.concat(arguments, " ", 1) .. "\"";
+
+				-- Interference Scramble Check
+				local scramble = false;
+				local gibberishList = {
+					"Inceptum... Malefica... Sanguinum... Vorteks...",
+					"Vita... Terebinthus... Occultum... Veritas...",
+					"Umbrae... Noctis... Silens... Exspiravit...",
+					"Dolorum... Pactum... Venari... Abissus...",
+					"Sacramentum... Vox... Maledictus... Umbra..."
+				};
+
+				for _, v in ipairs(_player.GetAll()) do
+					if v ~= player and v:Alive() then
+						local wep = v:GetActiveWeapon();
+						if IsValid(wep) and wep:GetClass() == "begotten_polearm_interferencetotem" then
+							if v:GetPos():Distance(player:GetPos()) <= 1024 then
+								scramble = true;
+								break;
+							end
+						end
+					end
+				end
+
+				if scramble then
+					Schema:EasyText(player, "olivedrab", "You feel a tingle of electricity crawl across your skin, and your hair stands on end...");
+					message = "\"" .. gibberishList[math.random(1, #gibberishList)] .. "\"";
+				end
 
 				for _, v in _player.Iterator() do
 					if v:HasInitialized() and v:Alive() then
 						local vFaction = v:GetNetVar("kinisgerOverride") or v:GetFaction();
-						
+
 						if (vFaction == faction) and (v:GetFaith() == "Faith of the Dark" or v:GetSubfaith() == "Faith of the Sister") then
 							Clockwork.chatBox:SetMultiplier(1.35);
-							
+
 							if v:GetSubfaction() == "Kinisger" and v:GetNetVar("kinisgerOverride") then
-								Clockwork.chatBox:Add(v, player, "darkwhisperglobalkinisger", message)
+								Clockwork.chatBox:Add(v, player, "darkwhisperglobalkinisger", message);
 							else
 								Clockwork.chatBox:Add(v, player, "darkwhisperglobal", message);
 							end
-							
-							v:SendLua([[Clockwork.Client:EmitSound("darkwhisper/darkwhisper_short"..math.random(1, 11)..".mp3", 80, 100)]]);
+
+							v:SendLua([[Clockwork.Client:EmitSound("darkwhisper/darkwhisper_short" .. math.random(1, 11) .. ".mp3", 80, 100)]]);
 						end
-					end;
-				end;
+					end
+				end
 			else
 				Schema:EasyText(player, "chocolate", "You must have the 'Witch' or 'Soothsayer' belief before you can darkwhisper!");
 			end
@@ -756,38 +848,63 @@ COMMAND.isChatCommand = true;
 COMMAND.onerequiredbelief = {"soothsayer", "witch"};
 COMMAND.subfaction = "Kinisger";
 
--- Called when the command has been run.
 function COMMAND:OnRun(player, arguments)
 	if player:GetSubfaction() == "Kinisger" then
 		local faction = player:GetNetVar("kinisgerOverride") or player:GetFaction();
-		
+
 		if faction ~= "Wanderer" then
 			if player:HasBelief("witch") or player:HasBelief("soothsayer") then
-				if !player:IsAdmin() and !Clockwork.player:HasFlags(player, "P") and !Schema:GetRankTier(faction, player:GetCharacterData("rank", 1)) >= 3 then
+				if not player:IsAdmin() and not Clockwork.player:HasFlags(player, "P") and not Schema:GetRankTier(faction, player:GetCharacterData("rank", 1)) >= 3 then
 					Schema:EasyText(player, "peru", "You are not important enough to do this!");
-				
 					return false;
 				end
-				
-				local message = "\""..table.concat(arguments, " ", 1).."\"";
+
+				local message = "\"" .. table.concat(arguments, " ", 1) .. "\"";
+
+				-- Interference Scramble Check
+				local scramble = false;
+				local gibberishList = {
+					"Inceptum... Malefica... Sanguinum... Vorteks...",
+					"Vita... Terebinthus... Occultum... Veritas...",
+					"Umbrae... Noctis... Silens... Exspiravit...",
+					"Dolorum... Pactum... Venari... Abissus...",
+					"Sacramentum... Vox... Maledictus... Umbra..."
+				};
+
+				for _, v in ipairs(_player.GetAll()) do
+					if v ~= player and v:Alive() then
+						local wep = v:GetActiveWeapon();
+						if IsValid(wep) and wep:GetClass() == "begotten_polearm_interferencetotem" then
+							if v:GetPos():Distance(player:GetPos()) <= 1024 then
+								scramble = true;
+								break;
+							end
+						end
+					end
+				end
+
+				if scramble then
+					Schema:EasyText(player, "olivedrab", "You feel a tingle of electricity crawl across your skin, and your hair stands on end...");
+					message = "\"" .. gibberishList[math.random(1, #gibberishList)] .. "\"";
+				end
 
 				for _, v in _player.Iterator() do
 					if v:HasInitialized() and v:Alive() then
 						local vFaction = v:GetNetVar("kinisgerOverride") or v:GetFaction();
-						
+
 						if (vFaction == faction) and (v:GetFaith() == "Faith of the Dark" or v:GetSubfaith() == "Faith of the Sister") then
 							Clockwork.chatBox:SetMultiplier(1.35);
-							
+
 							if v:GetSubfaction() == "Kinisger" and v:GetNetVar("kinisgerOverride") then
-								Clockwork.chatBox:Add(v, player, "darkwhisperglobalkinisger", message)
+								Clockwork.chatBox:Add(v, player, "darkwhisperglobalkinisger", message);
 							else
 								Clockwork.chatBox:Add(v, player, "darkwhisperglobal", message);
 							end
-							
-							v:SendLua([[Clockwork.Client:EmitSound("darkwhisper/darkwhisper_short"..math.random(1, 11)..".mp3", 80, 100)]]);
+
+							v:SendLua([[Clockwork.Client:EmitSound("darkwhisper/darkwhisper_short" .. math.random(1, 11) .. ".mp3", 80, 100)]]);
 						end
-					end;
-				end;
+					end
+				end
 			else
 				Schema:EasyText(player, "chocolate", "You must have the 'Witch' or 'Soothsayer' belief before you can darkwhisper!");
 			end
@@ -796,6 +913,34 @@ function COMMAND:OnRun(player, arguments)
 		end
 	else
 		Schema:EasyText(player, "firebrick", "You are not the correct subfaction to do this!");
+	end
+end;
+
+COMMAND:Register();
+
+local COMMAND = Clockwork.command:New("DarkReply");
+COMMAND.tip = "Using all your willpower, reply to a darkwhisper sent to you through the void. Note that this will incur a small amount of corruption if you are not of the Faith of the Dark.";
+COMMAND.text = "<string Message>";
+COMMAND.flags = CMD_DEFAULT;
+COMMAND.arguments = 1;
+COMMAND.isChatCommand = true;
+
+-- Called when the command has been run.
+function COMMAND:OnRun(player, arguments)
+	if IsValid(player.lastDarkWhisperer) then
+		local message = "\""..table.concat(arguments, " ", 1).."\"";
+
+		Clockwork.chatBox:Add(player, player, "darkwhisperreply", message);
+		Clockwork.chatBox:Add(player.lastDarkWhisperer, player, "darkwhisperreply", message);
+		
+		player:SendLua([[Clockwork.Client:EmitSound("darkwhisper/darkwhisper_short"..math.random(1, 11)..".mp3", 80, 100)]]);
+		player.lastDarkWhisperer:SendLua([[Clockwork.Client:EmitSound("darkwhisper/darkwhisper_short"..math.random(1, 11)..".mp3", 80, 100)]]);
+		
+		if (player:GetFaith() ~= "Faith of the Dark" and player:GetSubfaith() ~= "Faith of the Sister") then
+			player:HandleNeed("corruption", 5);
+		end;
+	else
+		Schema:EasyText(player, "firebrick", "There is no darkwhisper to reply to!");
 	end
 end;
 
